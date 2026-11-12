@@ -1,8 +1,18 @@
-# ProcFlow
+<p align="center">
+  <img src="assets/images/app_icon.png" width="112" alt="ProcFlow 图标" />
+</p>
 
-Windows 端进程网络流量实时监控工具。Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集每个进程的 TCP 收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
+<h1 align="center">ProcFlow</h1>
 
-仓库地址：<https://github.com/FrandreJoestar/ProcFlow>
+<p align="center">
+  Windows 端进程网络流量实时监控工具
+</p>
+
+<p align="center">
+  实时流量曲线 · 多进程监控 · 自动化规则 · 明暗主题
+</p>
+
+Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集每个进程的 TCP 收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
 
 ## 功能
 
