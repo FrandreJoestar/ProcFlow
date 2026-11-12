@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="ProcFlow"
+           Manufacturer="FrandreJoestar"
+           Version="$(var.Version)"
+           ProductCode="$(var.ProductCode)"
+           Language="1033"
+           Codepage="65001"
+           Scope="perMachine"
+           InstallerVersion="500"
+           UpgradeCode="{0F0D8EBB-7994-4D31-83B8-233D2F61AC80}">
+
+    <MajorUpgrade DowngradeErrorMessage="检测到更高版本的 ProcFlow，请先卸载后再安装。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.ProjectRoot)\windows\runner\resources\app_icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/FrandreJoestar/ProcFlow" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectRoot)\installer\license.rtf" />
+    <ui:WixUI Id="WixUI_InstallDir" />
+
+    <Feature Id="MainFeature"
+             Title="ProcFlow"
+             Description="Windows 进程网络流量实时监控"
+             Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="ProcFlow" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="ProcFlow">
+        <Component Id="StartMenuShortcut"
+                   Guid="{FDDC1439-16CD-4616-9ECC-78D3F7A9254E}">
+          <Shortcut Id="AppStartMenuShortcut"
+                    Name="ProcFlow"
+                    Description="Windows 进程网络流量监控"
+                    Target="[INSTALLFOLDER]procflow.exe"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon" />
+          <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
+          <RegistryValue Root="HKLM"
+                         Key="Software\FrandreJoestar\ProcFlow"
+                         Name="Installed"
+                         Type="integer"
+                         Value="1"
+                         KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+  </Fragment>
+</Wix>

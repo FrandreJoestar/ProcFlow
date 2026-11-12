@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# WiX 扩展本地缓存（installer/build_msi.ps1 自动生成）
+/.wix/
