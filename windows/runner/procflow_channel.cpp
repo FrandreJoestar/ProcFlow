@@ -8,6 +8,7 @@
 #include <iphlpapi.h>
 #include <powrprof.h>
 #include <tcpestats.h>
+#include <tlhelp32.h>
 #include <winver.h>
 
 #include <flutter/event_stream_handler_functions.h>
@@ -195,14 +196,42 @@ void ProcFlowChannel::HandleGetProcesses(
   };
 
   std::vector<ProcessEntry> processes;
-  for (const DWORD pid : EnumerateConnectedPids()) {
-    std::string name;
-    std::string display_name;
-    QueryProcessNames(pid, &name, &display_name);
-    if (name.empty()) {
-      name = "PID " + std::to_string(pid);
+
+  // 用 Toolhelp 快照枚举所有运行中的进程（与任务管理器一致）。
+  // 不能只看 TCP 连接表：UDP 程序、尚未建立连接或刚启动的进程都会缺失。
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot != INVALID_HANDLE_VALUE) {
+    PROCESSENTRY32W entry{};
+    entry.dwSize = sizeof(entry);
+    if (Process32FirstW(snapshot, &entry) != FALSE) {
+      do {
+        // PID 0 是 Idle 进程，既无法查询也不可监控
+        if (entry.th32ProcessID == 0) {
+          continue;
+        }
+
+        std::string name;
+        std::string display_name;
+        QueryProcessNames(entry.th32ProcessID, &name, &display_name);
+        if (name.empty()) {
+          // 受保护进程无法 OpenProcess，退回快照中的 exe 名
+          name = Utf8FromUtf16(entry.szExeFile);
+        }
+        if (name.empty()) {
+          name = "PID " + std::to_string(entry.th32ProcessID);
+        }
+
+        processes.push_back(
+            {entry.th32ProcessID, std::move(name), std::move(display_name)});
+      } while (Process32NextW(snapshot, &entry) != FALSE);
     }
-    processes.push_back({pid, std::move(name), std::move(display_name)});
+    CloseHandle(snapshot);
+  }
+
+  if (processes.empty()) {
+    result.Error("process_enum_failed",
+                 "无法枚举系统进程，请确认以管理员身份运行");
+    return;
   }
 
   // 按"软件名优先"排序，没有软件名时退回 exe 名称
@@ -519,52 +548,6 @@ void ProcFlowChannel::CollectIpv6Totals(
   }
 }
 
-std::set<DWORD> ProcFlowChannel::EnumerateConnectedPids() const {
-  std::set<DWORD> pids;
-
-  // IPv4
-  ULONG size = 0;
-  if (GetExtendedTcpTable(nullptr, &size, FALSE, AF_INET,
-                          TCP_TABLE_OWNER_PID_ALL, 0) ==
-          ERROR_INSUFFICIENT_BUFFER &&
-      size > 0) {
-    std::vector<uint8_t> buffer(size);
-    auto* table =
-        reinterpret_cast<PMIB_TCPTABLE_OWNER_PID>(buffer.data());
-    if (GetExtendedTcpTable(buffer.data(), &size, FALSE, AF_INET,
-                            TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR) {
-      for (DWORD i = 0; i < table->dwNumEntries; ++i) {
-        const DWORD pid = table->table[i].dwOwningPid;
-        if (pid != 0) {
-          pids.insert(pid);
-        }
-      }
-    }
-  }
-
-  // IPv6
-  size = 0;
-  if (GetExtendedTcpTable(nullptr, &size, FALSE, AF_INET6,
-                          TCP_TABLE_OWNER_PID_ALL, 0) ==
-          ERROR_INSUFFICIENT_BUFFER &&
-      size > 0) {
-    std::vector<uint8_t> buffer(size);
-    auto* table =
-        reinterpret_cast<PMIB_TCP6TABLE_OWNER_PID>(buffer.data());
-    if (GetExtendedTcpTable(buffer.data(), &size, FALSE, AF_INET6,
-                            TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR) {
-      for (DWORD i = 0; i < table->dwNumEntries; ++i) {
-        const DWORD pid = table->table[i].dwOwningPid;
-        if (pid != 0) {
-          pids.insert(pid);
-        }
-      }
-    }
-  }
-
-  return pids;
-}
-
 void ProcFlowChannel::QueryProcessNames(DWORD pid,
                                         std::string* exe_name,
                                         std::string* display_name) const {
@@ -592,9 +575,16 @@ void ProcFlowChannel::QueryProcessNames(DWORD pid,
     if (exe_name != nullptr) {
       *exe_name = Utf8FromUtf16(file_name.c_str());
     }
-    // 软件名来自 exe 的版本资源，和任务管家里显示的"名称"一致
+    // 软件名来自 exe 的版本资源，和任务管家里显示的"名称"一致；
+    // 以完整路径为键缓存，避免每次刷新都读一遍版本资源
     if (display_name != nullptr) {
-      *display_name = QueryFileDescription(full_path);
+      const auto cached = description_cache_.find(full_path);
+      if (cached != description_cache_.end()) {
+        *display_name = cached->second;
+      } else {
+        *display_name = QueryFileDescription(full_path);
+        description_cache_.emplace(full_path, *display_name);
+      }
     }
   }
 

@@ -22,7 +22,7 @@
 // 原生数据桥。
 //
 // - MethodChannel "procflow/native"：
-//     get_processes        返回 [{pid, name}, ...]
+//     get_processes        返回所有运行中的进程 [{pid, name, display_name}, ...]
 //     set_monitored_pids   参数 {pids: [int]}，只采集这些进程
 //     kill_process         参数 {pid: int}
 // - EventChannel "traffic_stream"：
@@ -74,8 +74,6 @@ class ProcFlowChannel {
   void CollectIpv6Totals(
       std::unordered_map<DWORD, ByteTotals>* totals) const;
 
-  std::set<DWORD> EnumerateConnectedPids() const;
-
   /// 取进程的原始 exe 名与软件名（exe 版本信息中的 FileDescription）
   void QueryProcessNames(DWORD pid,
                          std::string* exe_name,
@@ -104,6 +102,9 @@ class ProcFlowChannel {
   std::unordered_map<DWORD, ByteTotals> last_totals_;
   std::chrono::steady_clock::time_point last_sample_time_{};
   bool has_last_sample_ = false;
+
+  // 按 exe 完整路径缓存软件名，避免每次刷新进程列表都读版本资源
+  mutable std::unordered_map<std::wstring, std::string> description_cache_;
 };
 
 #endif  // RUNNER_PROC_FLOW_CHANNEL_H_
