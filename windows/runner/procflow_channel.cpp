@@ -352,6 +352,8 @@ void ProcFlowChannel::StartSampling() {
   if (timer_id_ == 0) {
     timer_id_ = SetTimer(window_, kTimerId, kSampleIntervalMs, nullptr);
   }
+  // UDP 字节只能通过 ETW 获取；会话启动失败时自动退化为只统计 TCP
+  udp_monitor_.Start();
   // 重新开始监听时丢弃旧基线，避免把暂停期间产生的差值算进第一帧
   has_last_sample_ = false;
   last_totals_.clear();
@@ -363,6 +365,7 @@ void ProcFlowChannel::StopSampling() {
     KillTimer(window_, timer_id_);
     timer_id_ = 0;
   }
+  udp_monitor_.Stop();
   has_last_sample_ = false;
 }
 
@@ -387,6 +390,16 @@ flutter::EncodableList ProcFlowChannel::BuildTrafficFrame() {
   std::unordered_map<DWORD, ByteTotals> totals;
   if (!monitored_pids_.empty()) {
     CollectConnectionTotals(&totals);
+    // 把 ETW 采集到的 UDP 累计字节并入同一份累计值，
+    // 后续仍然按 PID 求差值/时间，TCP 与 UDP 共用一条速率曲线
+    for (const auto& entry : udp_monitor_.Snapshot()) {
+      if (monitored_pids_.find(entry.first) == monitored_pids_.end()) {
+        continue;
+      }
+      ByteTotals& target = totals[entry.first];
+      target.rx += entry.second.rx;
+      target.tx += entry.second.tx;
+    }
   }
 
   double elapsed_seconds = 0.0;
@@ -441,8 +454,8 @@ void ProcFlowChannel::CollectConnectionTotals(
     std::unordered_map<DWORD, ByteTotals>* totals) const {
   CollectIpv4Totals(totals);
   CollectIpv6Totals(totals);
-  // 说明：ESTATS 只覆盖 TCP；UDP 连接没有累计字节统计，
-  // 若需要统计 UDP 流量，应改用 ETW（后续版本）。
+  // 说明：ESTATS 只覆盖 TCP；UDP 的累计字节由 EtwTrafficMonitor 提供，
+  // 在 BuildTrafficFrame 中合并。
 }
 
 void ProcFlowChannel::CollectIpv4Totals(

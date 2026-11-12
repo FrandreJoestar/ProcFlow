@@ -11,6 +11,8 @@ add_executable(${BINARY_NAME} WIN32
   "main.cpp"
   # 原生数据桥：进程列表 + 实时流量 EventChannel
   "procflow_channel.cpp"
+  # UDP 流量采集（ETW）
+  "etw_traffic_monitor.cpp"
   "utils.cpp"
   "win32_window.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
@@ -54,6 +56,8 @@ target_link_libraries(${BINARY_NAME} PRIVATE "ws2_32.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "powrprof.lib")
 # 读取 exe 版本信息（软件名 FileDescription）
 target_link_libraries(${BINARY_NAME} PRIVATE "version.lib")
+# ETW 会话控制（StartTrace / OpenTrace / ProcessTrace）
+target_link_libraries(${BINARY_NAME} PRIVATE "advapi32.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

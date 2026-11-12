@@ -19,6 +19,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "etw_traffic_monitor.h"
+
 // 原生数据桥。
 //
 // - MethodChannel "procflow/native"：
@@ -102,6 +104,9 @@ class ProcFlowChannel {
   std::unordered_map<DWORD, ByteTotals> last_totals_;
   std::chrono::steady_clock::time_point last_sample_time_{};
   bool has_last_sample_ = false;
+
+  // UDP 累计字节来自 ETW（内部有独立消费线程，读写已加锁）
+  EtwTrafficMonitor udp_monitor_;
 
   // 按 exe 完整路径缓存软件名，避免每次刷新进程列表都读版本资源
   mutable std::unordered_map<std::wstring, std::string> description_cache_;

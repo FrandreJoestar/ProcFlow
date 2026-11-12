@@ -12,11 +12,11 @@
   实时流量曲线 · 多进程监控 · 自动化规则 · 明暗主题
 </p>
 
-Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集每个进程的 TCP 收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
+Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集 TCP、通过 ETW 采集 UDP 的每进程收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
 
 ## 功能
 
-- **进程列表**：展示当前有 TCP 连接的进程，同时显示软件名（任务管理器同款 `FileDescription`）、原始进程名与 PID，支持模糊搜索。
+- **进程列表**：展示所有运行中的进程（Toolhelp 快照全量枚举），同时显示软件名（任务管理器同款 `FileDescription`）、原始进程名与 PID，支持模糊搜索。
 - **监控列表**：多选添加 / 移除进程，每个进程分配唯一曲线颜色。
 - **实时流量图**：`fl_chart` 多曲线折线图，最近 60 秒滑动窗口，Y 轴在 B/s、KB/s、MB/s 间自动切换，带虚线网格与阈值实线。
 - **自动化规则**：按“指标 + 低于/高于 + 阈值 + 持续时长”判定，支持弹窗警告、结束进程、关机、休眠、仅记录日志。
@@ -29,7 +29,7 @@ Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集�
 |---|---|
 | UI | Flutter 3.44 / Material 3 / `fl_chart` |
 | 状态管理 | Riverpod 3 |
-| 原生层 | C++17、IP Helper API（`GetExtendedTcpTable`、`GetPerTcpConnectionEStats`） |
+| 原生层 | C++17、IP Helper API（`GetExtendedTcpTable`、`GetPerTcpConnectionEStats`）、ETW（`Microsoft-Windows-Kernel-Network`） |
 | 通信 | MethodChannel `procflow/native` + EventChannel `traffic_stream` |
 | 字体 | 霞鹜文楷 LXGW WenKai（SIL OFL 1.1） |
 
@@ -37,7 +37,9 @@ Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集�
 
 ```
 C++ 消息窗口 (WM_TIMER, 1s)
-  └─ 枚举 TCP 连接 → 读取 ESTATS 累计字节 → 按 PID 求差值/时间 = 速率
+  ├─ 枚举 TCP 连接 → 读取 ESTATS 累计字节
+  └─ ETW 会话（NT Kernel Logger）→ UDP 收发事件累计字节
+        └─ 按 PID 合并 → 求差值/时间 = 速率
         │ EventChannel: [{pid, rx_speed, tx_speed}]
         ▼
 AppRuntime ──► monitorListProvider.ingest() ──► fl_chart 曲线
@@ -61,6 +63,7 @@ lib/
    └─ widgets/           # 控制区、图表、公共卡片
 windows/runner/
 ├─ procflow_channel.*    # 原生通道与 ESTATS 采样
+├─ etw_traffic_monitor.* # ETW 会话采集 UDP 收发字节
 ├─ main.cpp              # 默认窗口 1600×1000，居中启动
 └─ runner.exe.manifest   # 管理员权限清单
 ```
@@ -122,7 +125,7 @@ flutter build windows --release
 
 ## 已知限制
 
-- ESTATS 只覆盖 **TCP**，UDP 流量暂未统计（后续可用 ETW 补齐）。
+- TCP 依赖 ESTATS，UDP 依赖 ETW 的 NT Kernel Logger 会话；若该会话已被其他工具（如 Process Monitor）占用，程序会自动退化为只统计 TCP。
 - 部分连接（如 TIME_WAIT、驱动不支持）可能读到 0。
 - 程序必须管理员运行；`requireAdministrator` 清单已内置，启动时会弹 UAC。
 - 休眠需要系统已启用：`powercfg /hibernate on`。
