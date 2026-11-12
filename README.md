@@ -2,6 +2,8 @@
 
 Windows 端进程网络流量实时监控工具。Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集每个进程的 TCP 收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
 
+仓库地址：<https://github.com/FrandreJoestar/ProcFlow>
+
 ## 功能
 
 - **进程列表**：展示当前有 TCP 连接的进程，同时显示软件名（任务管理器同款 `FileDescription`）、原始进程名与 PID，支持模糊搜索。
@@ -85,6 +87,8 @@ EventChannel `traffic_stream` 每秒推送：
 ### 运行
 
 ```powershell
+git clone https://github.com/FrandreJoestar/ProcFlow.git
+cd ProcFlow
 flutter pub get
 # 必须以管理员身份打开终端 / IDE，否则无法启动（manifest 要求提升权限）
 flutter run -d windows

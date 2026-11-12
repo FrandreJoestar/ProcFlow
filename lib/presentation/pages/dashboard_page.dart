@@ -41,18 +41,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         titleSpacing: 16,
         title: Row(
           children: <Widget>[
-            // 应用图标
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.monitor_heart_outlined,
-                size: 19,
-                color: scheme.onPrimaryContainer,
+            // 应用图标（与 exe 图标一致）
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/app_icon.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
               ),
             ),
             const SizedBox(width: 10),
