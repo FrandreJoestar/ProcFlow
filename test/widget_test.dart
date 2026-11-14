@@ -148,4 +148,99 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('长按拖动区间多选，反向拖动取消区间外的行', (WidgetTester tester) async {
+    await useDesktopSurface(tester);
+    final _FakeTrafficService service = _FakeTrafficService(const <ProcessInfo>[
+      ProcessInfo(pid: 100, name: 'procA'),
+      ProcessInfo(pid: 200, name: 'procB'),
+      ProcessInfo(pid: 300, name: 'procC'),
+    ]);
+    addTearDown(service.dispose);
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [trafficServiceProvider.overrideWithValue(service)],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const ProcFlowApp(),
+      ),
+    );
+    await tester.pump();
+
+    final Offset rowA = tester.getCenter(find.text('procA'));
+    final Offset rowB = tester.getCenter(find.text('procB'));
+    final Offset rowC = tester.getCenter(find.text('procC'));
+
+    // 长按第一行，进入拖动多选
+    final TestGesture gesture = await tester.startGesture(rowA);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(container.read(processListProvider).selectedPids, <int>{100});
+
+    // 拖到第三行：整段选中
+    await gesture.moveTo(rowC);
+    await tester.pump();
+    expect(container.read(processListProvider).selectedPids, <int>{100, 200, 300});
+
+    // 反向拖回第二行：第三行恢复为拖动前的未选中状态
+    await gesture.moveTo(rowB);
+    await tester.pump();
+    expect(container.read(processListProvider).selectedPids, <int>{100, 200});
+
+    await gesture.up();
+    await tester.pump();
+    expect(container.read(processListProvider).selectedPids, <int>{100, 200});
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('拖到列表底部边缘时自动滚动并继续选中', (WidgetTester tester) async {
+    await useDesktopSurface(tester);
+    final _FakeTrafficService service = _FakeTrafficService(<ProcessInfo>[
+      for (int i = 0; i < 30; i++)
+        ProcessInfo(pid: 1000 + i, name: 'proc$i'),
+    ]);
+    addTearDown(service.dispose);
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [trafficServiceProvider.overrideWithValue(service)],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const ProcFlowApp(),
+      ),
+    );
+    await tester.pump();
+
+    final Finder scrollable = find.ancestor(
+      of: find.text('proc0'),
+      matching: find.byType(Scrollable),
+    );
+    final Rect viewport = tester.getRect(scrollable);
+
+    final TestGesture gesture = await tester.startGesture(
+      tester.getCenter(find.text('proc0')),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // 拖到视口底部边缘之外，触发自动滚动
+    await gesture.moveTo(Offset(viewport.center.dx, viewport.bottom + 40));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    // 视口内只能放下十几行，能选到第 21 行说明列表确实自动滚动了
+    expect(
+      container.read(processListProvider).selectedPids.contains(1020),
+      isTrue,
+    );
+
+    await gesture.up();
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
