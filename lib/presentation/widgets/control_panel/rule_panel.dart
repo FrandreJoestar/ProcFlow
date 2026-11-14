@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:m3e_dropdown_menu/m3e_dropdown_menu.dart';
 
 import '../../../data/models/rule_config.dart';
 import '../../providers/rule_provider.dart';
@@ -148,54 +149,36 @@ class _RulePanelState extends ConsumerState<RulePanel> {
             Text('当监控列表', style: theme.textTheme.titleSmall),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Expanded(
                   flex: 3,
-                  child: DropdownButtonFormField<RuleMetric>(
-                    initialValue: _metric,
-                    isDense: true,
-                    isExpanded: true,
-                    style: theme.textTheme.bodyMedium,
-                    decoration: _decoration('指标'),
-                    items: <DropdownMenuItem<RuleMetric>>[
-                      for (final RuleMetric metric in RuleMetric.values)
-                        DropdownMenuItem<RuleMetric>(
-                          value: metric,
-                          child: Text(metric.label),
-                        ),
-                    ],
-                    onChanged: (RuleMetric? value) {
-                      if (value == null) return;
-                      setState(() => _metric = value);
-                    },
+                  child: _RuleDropdown<RuleMetric>(
+                    label: '指标',
+                    values: RuleMetric.values,
+                    labelOf: (RuleMetric metric) => metric.label,
+                    value: _metric,
+                    onChanged: (RuleMetric value) =>
+                        setState(() => _metric = value),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
-                  child: DropdownButtonFormField<RuleComparison>(
-                    initialValue: _comparison,
-                    isDense: true,
-                    isExpanded: true,
-                    style: theme.textTheme.bodyMedium,
-                    decoration: _decoration('条件'),
-                    items: <DropdownMenuItem<RuleComparison>>[
-                      for (final RuleComparison c in RuleComparison.values)
-                        DropdownMenuItem<RuleComparison>(
-                          value: c,
-                          child: Text(c.label),
-                        ),
-                    ],
-                    onChanged: (RuleComparison? value) {
-                      if (value == null) return;
-                      setState(() => _comparison = value);
-                    },
+                  child: _RuleDropdown<RuleComparison>(
+                    label: '条件',
+                    values: RuleComparison.values,
+                    labelOf: (RuleComparison comparison) => comparison.label,
+                    value: _comparison,
+                    onChanged: (RuleComparison value) =>
+                        setState(() => _comparison = value),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Expanded(
                   child: TextField(
@@ -212,30 +195,21 @@ class _RulePanelState extends ConsumerState<RulePanel> {
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  width: 96,
-                  child: DropdownButtonFormField<_RateUnit>(
-                    initialValue: _rateUnit,
-                    isDense: true,
-                    isExpanded: true,
-                    style: theme.textTheme.bodyMedium,
-                    decoration: _decoration('单位'),
-                    items: <DropdownMenuItem<_RateUnit>>[
-                      for (final _RateUnit unit in _RateUnit.values)
-                        DropdownMenuItem<_RateUnit>(
-                          value: unit,
-                          child: Text(unit.label),
-                        ),
-                    ],
-                    onChanged: (_RateUnit? value) {
-                      if (value == null) return;
-                      setState(() => _rateUnit = value);
-                    },
+                  width: 104,
+                  child: _RuleDropdown<_RateUnit>(
+                    label: '单位',
+                    values: _RateUnit.values,
+                    labelOf: (_RateUnit unit) => unit.label,
+                    value: _rateUnit,
+                    onChanged: (_RateUnit value) =>
+                        setState(() => _rateUnit = value),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Expanded(
                   child: TextField(
@@ -250,46 +224,25 @@ class _RulePanelState extends ConsumerState<RulePanel> {
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  width: 96,
-                  child: DropdownButtonFormField<_TimeUnit>(
-                    initialValue: _timeUnit,
-                    isDense: true,
-                    isExpanded: true,
-                    style: theme.textTheme.bodyMedium,
-                    decoration: _decoration('单位'),
-                    items: <DropdownMenuItem<_TimeUnit>>[
-                      for (final _TimeUnit unit in _TimeUnit.values)
-                        DropdownMenuItem<_TimeUnit>(
-                          value: unit,
-                          child: Text(unit.label),
-                        ),
-                    ],
-                    onChanged: (_TimeUnit? value) {
-                      if (value == null) return;
-                      setState(() => _timeUnit = value);
-                    },
+                  width: 104,
+                  child: _RuleDropdown<_TimeUnit>(
+                    label: '单位',
+                    values: _TimeUnit.values,
+                    labelOf: (_TimeUnit unit) => unit.label,
+                    value: _timeUnit,
+                    onChanged: (_TimeUnit value) =>
+                        setState(() => _timeUnit = value),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            DropdownButtonFormField<RuleAction>(
-              initialValue: _action,
-              isDense: true,
-              isExpanded: true,
-              style: theme.textTheme.bodyMedium,
-              decoration: _decoration('执行动作'),
-              items: <DropdownMenuItem<RuleAction>>[
-                for (final RuleAction action in RuleAction.values)
-                  DropdownMenuItem<RuleAction>(
-                    value: action,
-                    child: Text(action.label),
-                  ),
-              ],
-              onChanged: (RuleAction? value) {
-                if (value == null) return;
-                setState(() => _action = value);
-              },
+            _RuleDropdown<RuleAction>(
+              label: '执行动作',
+              values: RuleAction.values,
+              labelOf: (RuleAction action) => action.label,
+              value: _action,
+              onChanged: (RuleAction value) => setState(() => _action = value),
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -344,6 +297,121 @@ class _StatusBadge extends StatelessWidget {
           Text(enabled ? '已启用' : '未启用', style: TextStyle(color: color)),
         ],
       ),
+    );
+  }
+}
+
+/// 规则面板的 M3E 风格下拉框。
+///
+/// 只替换外观：仍然单选、选中后立即回调，不提供搜索、清空与多选。
+class _RuleDropdown<T> extends StatefulWidget {
+  const _RuleDropdown({
+    required this.label,
+    required this.values,
+    required this.labelOf,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<T> values;
+  final String Function(T value) labelOf;
+  final T value;
+  final ValueChanged<T> onChanged;
+
+  @override
+  State<_RuleDropdown<T>> createState() => _RuleDropdownState<T>();
+}
+
+class _RuleDropdownState<T> extends State<_RuleDropdown<T>> {
+  /// 与示例一致的弹簧参数
+  static final M3EMotion _motion = M3EMotion.custom(
+    stiffness: 500.0,
+    damping: 0.6,
+  );
+
+  final M3EDropdownController<T> _controller = M3EDropdownController<T>();
+
+  /// items 必须保持同一实例：组件在 didUpdateWidget 中检测到新列表会重设
+  /// 选中项并回调，若不慎在 build 中重建，等于在构建期触发 setState。
+  late final List<M3EDropdownItem<T>> _items = <M3EDropdownItem<T>>[
+    for (final T value in widget.values)
+      M3EDropdownItem<T>(
+        label: widget.labelOf(value),
+        value: value,
+        selected: value == widget.value,
+      ),
+  ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleSelection(List<M3EDropdownItem<T>> selected) {
+    if (selected.isEmpty) {
+      // 单选字段必须始终有值：用户点掉当前项时把它恢复回来
+      _controller.selectWhere(
+        (M3EDropdownItem<T> item) => item.value == widget.value,
+      );
+      return;
+    }
+    widget.onChanged(selected.first.value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? fieldText = theme.textTheme.bodyMedium;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          widget.label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        M3EDropdownMenu<T>(
+          items: _items,
+          controller: _controller,
+          singleSelect: true,
+          searchEnabled: false,
+          showChipAnimation: false,
+          containerRadius: 28.0,
+          haptic: M3EHapticFeedback.light,
+          openMotion: _motion,
+          closeMotion: _motion,
+          fieldStyle: M3EDropdownFieldStyle(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            selectedTextStyle: fieldText,
+            hintStyle: fieldText?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          dropdownStyle: const M3EDropdownStyle(
+            elevation: 4.0,
+            maxHeight: 350.0,
+            marginTop: 4.0,
+            expandDirection: ExpandDirection.auto,
+            contentPadding: EdgeInsets.all(8.0),
+          ),
+          itemStyle: M3EDropdownItemStyle(
+            outerRadius: 18.0,
+            innerRadius: 6.0,
+            itemGap: 3.0,
+            itemPadding: const EdgeInsets.all(12.0),
+            textStyle: fieldText,
+            selectedTextStyle: fieldText,
+            selectedIcon: const Icon(Icons.check_rounded, size: 18),
+          ),
+          onSelectionChanged: _handleSelection,
+        ),
+      ],
     );
   }
 }

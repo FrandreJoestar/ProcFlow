@@ -7,6 +7,14 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+analyzer:
+  exclude:
+    - build/**
+    - windows/**
+  errors:
+    # Flutter 3.50 起 package:flutter/material.dart 被标记为废弃，推荐 material_ui。
+    # 本项目（含 fl_chart）仍基于 flutter/material，先忽略该提示。
+    deprecated_member_use: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
