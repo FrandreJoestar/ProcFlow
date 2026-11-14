@@ -9,17 +9,21 @@
 </p>
 
 <p align="center">
-  实时流量曲线 · 多进程监控 · 自动化规则 · 明暗主题
+  实时流量曲线 · 多进程拖选 · 自动化规则 · 明暗主题
 </p>
 
 Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集 TCP、通过 ETW 采集 UDP 的每进程收发速率，界面以 Material 3 呈现，并支持自动化规则（告警 / 结束进程 / 关机 / 休眠）。
 
+## 下载
+
+安装包见 [Releases](https://github.com/FrandreJoestar/ProcFlow/releases/latest)（Windows x64 MSI）。
+
 ## 功能
 
-- **进程列表**：展示所有运行中的进程（Toolhelp 快照全量枚举），同时显示软件名（任务管理器同款 `FileDescription`）、原始进程名与 PID，支持模糊搜索。
+- **进程列表**：展示所有运行中的进程（Toolhelp 快照全量枚举），显示软件名（任务管理器同款 `FileDescription`）、原始进程名与 PID；支持模糊搜索，以及长按拖动区间多选、反向拖回反选、拖到上下边缘自动滚动。
 - **监控列表**：多选添加 / 移除进程，每个进程分配唯一曲线颜色。
 - **实时流量图**：`fl_chart` 多曲线折线图，最近 60 秒滑动窗口，Y 轴在 B/s、KB/s、MB/s 间自动切换，带虚线网格与阈值实线。
-- **自动化规则**：按“指标 + 低于/高于 + 阈值 + 持续时长”判定，支持弹窗警告、结束进程、关机、休眠、仅记录日志。
+- **自动化规则**：M3E 风格下拉框配置“指标 + 低于/高于 + 阈值 + 持续时长”，支持弹窗警告、结束进程、关机、休眠、仅记录日志。
 - **明暗主题**：默认浅色，AppBar 右侧一键切换深色模式。
 - **性能优化**：固定容量环形缓冲、关闭图表动画、隐藏数据点、`RepaintBoundary` 隔离重绘。
 
@@ -27,7 +31,7 @@ Flutter 负责界面与实时图表，C++ 原生层通过 IP Helper API 采集 T
 
 | 层 | 技术 |
 |---|---|
-| UI | Flutter 3.44 / Material 3 / `fl_chart` |
+| UI | Flutter 3.50 / Material 3 / `fl_chart` / `m3e_dropdown_menu` |
 | 状态管理 | Riverpod 3 |
 | 原生层 | C++17、IP Helper API（`GetExtendedTcpTable`、`GetPerTcpConnectionEStats`）、ETW（`Microsoft-Windows-Kernel-Network`） |
 | 通信 | MethodChannel `procflow/native` + EventChannel `traffic_stream` |
@@ -93,7 +97,7 @@ EventChannel `traffic_stream` 每秒推送：
 ### 环境要求
 
 - Windows 10 1709+ 或 Windows 11（`TcpConnectionEstatsData` 依赖该版本）
-- Flutter 3.44+（Dart 3.12）
+- Flutter 3.50+（Dart 3.14）
 - Visual Studio 2022，安装“使用 C++ 的桌面开发”工作负载
 - **管理员权限**：ESTATS 采集、结束进程、关机、休眠都需要
 
