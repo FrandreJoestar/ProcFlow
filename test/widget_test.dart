@@ -243,4 +243,57 @@ void main() {
     await tester.pump();
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('监控列表同样支持长按拖动多选与反向反选', (WidgetTester tester) async {
+    await useDesktopSurface(tester);
+    final _FakeTrafficService service = _FakeTrafficService(
+      const <ProcessInfo>[],
+    );
+    addTearDown(service.dispose);
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [trafficServiceProvider.overrideWithValue(service)],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const ProcFlowApp(),
+      ),
+    );
+    await tester.pump();
+
+    container.read(monitorListProvider.notifier).addAll(
+      const <ProcessInfo>[
+        ProcessInfo(pid: 500, name: 'monA'),
+        ProcessInfo(pid: 600, name: 'monB'),
+        ProcessInfo(pid: 700, name: 'monC'),
+      ],
+    );
+    await tester.pump();
+
+    final Offset rowA = tester.getCenter(find.text('monA'));
+    final Offset rowB = tester.getCenter(find.text('monB'));
+    final Offset rowC = tester.getCenter(find.text('monC'));
+
+    final TestGesture gesture = await tester.startGesture(rowA);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(container.read(monitorSelectionProvider), <int>{500});
+
+    await gesture.moveTo(rowC);
+    await tester.pump();
+    expect(container.read(monitorSelectionProvider), <int>{500, 600, 700});
+
+    // 反向拖回第二行，第三行恢复未选中
+    await gesture.moveTo(rowB);
+    await tester.pump();
+    expect(container.read(monitorSelectionProvider), <int>{500, 600});
+
+    await gesture.up();
+    await tester.pump();
+    expect(container.read(monitorSelectionProvider), <int>{500, 600});
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

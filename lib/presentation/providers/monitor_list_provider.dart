@@ -113,6 +113,12 @@ class MonitorSelectionNotifier extends Notifier<Set<int>> {
     state = next;
   }
 
+  /// 一次性覆盖勾选集合（用于长按拖动选区）
+  void setSelection(Set<int> pids) {
+    if (setEquals(state, pids)) return;
+    state = Set<int>.of(pids);
+  }
+
   void clear() {
     if (state.isEmpty) return;
     state = const <int>{};

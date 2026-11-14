@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatters.dart';
 import '../../../data/models/monitor_item.dart';
 import '../../providers/monitor_list_provider.dart';
+import '../common/drag_select_list.dart';
 import '../common/panel_card.dart';
 
 /// 右上：已加入监控的进程列表（支持多选以移出监控）。
 class MonitorListPanel extends ConsumerWidget {
   const MonitorListPanel({super.key});
+
+  /// 与列表 itemExtent 保持一致
+  static const double _itemExtent = 52;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,10 +24,14 @@ class MonitorListPanel extends ConsumerWidget {
       subtitle: '${state.length} 个',
       child: state.isEmpty
           ? const _EmptyHint()
-          : ListView.builder(
-              padding: EdgeInsets.zero,
-              itemExtent: 52,
-              itemCount: state.length,
+          : DragSelectListView(
+              ids: <int>[for (final MonitorItem item in state.list) item.pid],
+              selectedIds: selection,
+              itemExtent: _itemExtent,
+              onSelectionChanged: (Set<int> next) =>
+                  ref.read(monitorSelectionProvider.notifier).setSelection(
+                        next,
+                      ),
               itemBuilder: (BuildContext context, int index) {
                 final MonitorItem item = state.list[index];
                 return _MonitorTile(
